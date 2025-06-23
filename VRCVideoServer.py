@@ -1,9 +1,11 @@
 from flask import Flask, send_file, request,redirect
 from threading import Timer
 import pyperclip
-import os
+import os 
+import io
 import urllib
 import random
+from PIL import Image
 
 files = os.listdir("../")
 videos = []
@@ -28,7 +30,7 @@ app = Flask(__name__)
 @app.route("/", methods =["GET"])
 def sendVideo():
     return "add /v to play a video and /i to show an image"
-    
+# Video
 @app.route("/v/<int:index>", methods = ["GET"])
 def videoPlayer(index):
     try:
@@ -39,13 +41,22 @@ def videoPlayer(index):
 @app.route("/v", methods = ["GET"])
 def defaultVideo(index):
     return send_file(f"../{videos[0]}", as_attachment = True)
-    
+# Image   
 @app.route("/i/<int:index>", methods = ["GET"])       
 def imageSender(index):
-    try:
-        return send_file(f"../{images[int(index) - 1]}", as_attachment = True)
-    except:
-        return send_file(f"../{images[0]}", as_attachment = True)
+    img = Image.open(f"../{images[index - 1]}")
+    width, height = img.size
+    if (width > 2048):
+        height = height * (2048/width)
+        width = 2048
+    if (height > 2048): 
+        width = width * (2048/height)
+        height = 2048
+    resized_img = img.resize((int(width), int(height)))
+    img_io = io.BytesIO()
+    resized_img.save(img_io, format = img.format or "JPEG")
+    img_io.seek(0)
+    return send_file(img_io,mimetype=f'image/{img.format.lower() if img.format else "jpeg"}', as_attachment = True, download_name = "image.jpg")
         
 @app.route("/i", methods = ["GET"])
 def defaultImage(index):
